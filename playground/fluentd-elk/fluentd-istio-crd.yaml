@@ -1,0 +1,52 @@
+# Configuration for logentry instances
+apiVersion: "config.istio.io/v1alpha2"
+kind: logentry
+metadata:
+  name: newlog
+  namespace: istio-system
+spec:
+  severity: '"info"'
+  timestamp: request.time
+  variables:
+    sourceIp: source.ip | ip("0.0.0.0")
+    protocol: request.scheme | "http"
+    destinationIp: destination.ip | ip("0.0.0.0")
+    method: request.method | ""
+    source: source.labels["app"] | source.workload.name | "unknown"
+    user: source.user | "unknown"
+    destination: destination.labels["app"] | destination.workload.name | "unknown"
+    responseCode: response.code | 0
+    responseSize: response.size | 0
+    requestSize: request.size | 0
+    latency: response.duration | "0ms"
+    url: request.path | ""
+    userAgent: request.useragent | ""
+    referer: request.referer | ""
+    xForwardedFor: request.headers["x-forwarded-for"] | "0.0.0.0"
+    requestId: request.headers["x-request-id"] | ""
+    clientTraceId: request.headers["x-client-trace-id"] | ""
+  monitored_resource_type: '"UNSPECIFIED"'
+---
+# Configuration for a Fluentd handler
+apiVersion: "config.istio.io/v1alpha2"
+kind: fluentd
+metadata:
+  name: handler
+  namespace: istio-system
+spec:
+  address: "fluentd-es.logging:24224"
+---
+# Rule to send logentry instances to the Fluentd handler
+apiVersion: "config.istio.io/v1alpha2"
+kind: rule
+metadata:
+  name: newlogtofluentd
+  namespace: istio-system
+spec:
+  match: "true" # match for all requests
+  actions:
+   - handler: handler.fluentd
+     instances:
+     - newlog.logentry
+---
+

@@ -1,0 +1,20 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: httpbin-cross
+spec:
+  hosts:
+  - "httpbin.example.cross.com"
+  gateways:
+  - httpbin-cross-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /status
+    - uri:
+        prefix: /delay
+    route:
+    - destination:
+        port:
+          number: 80
+        host: "httpbin.org"
