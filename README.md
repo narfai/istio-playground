@@ -51,9 +51,9 @@ kubectl apply -f crossbound-simple/httpbin-cross-gateway.yaml
 kubectl apply -f crossbound-simple/httpbin-cross-routes-vs.yaml
 kubectl apply -f crossbound-simple/httpbin-cross-service-entry.yaml
 
-# Working crossbound passthrough only with istio gw & egress / ingress
-
 # Working crossbound https passthrough
+
+
 
 # Working outbound with strongswan in front of ingress
 
@@ -84,3 +84,6 @@ Book inbound 	# kubectl exec -it $(kubectl get pod -l app=ratings -o jsonpath='{
 Inbound 		# curl -I -HHost:httpbin.example.com http://$INGRESS_HOST:$INGRESS_PORT/status/200
 Outbound 		# kubectl exec -it $SOURCE_POD -c sleep -- curl -v http://httpbin.org/status/200
 Cross			# curl -I -HHost:httpbin.org http://$INGRESS_HOST:$INGRESS_PORT/status/200
+Outbound tls    # kubectl exec -it $SOURCE_POD -c sleep -- curl -v https://httpbin.org/status/200
+Crossbound tls passthough # curl -v --resolve httpbin.org:$SECURE_INGRESS_PORT:$INGRESS_HOST https://httpbin.org:$SECURE_INGRESS_PORT/status/404
+
