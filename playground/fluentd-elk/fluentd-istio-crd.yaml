@@ -6,7 +6,7 @@ metadata:
   namespace: istio-system
 spec:
   severity: '"info"'
-  timestamp: request.time
+  timestamp: request.time | timestamp("2017-01-01T00:00:00Z")
   variables:
     sourceIp: source.ip | ip("0.0.0.0")
     protocol: request.scheme | "http"
