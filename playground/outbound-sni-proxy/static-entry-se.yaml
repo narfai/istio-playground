@@ -1,0 +1,25 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: sni-proxy
+spec:
+  hosts:
+  - sni-proxy.local
+  location: MESH_EXTERNAL
+  ports:
+  - number: 8443
+    name: tcp
+    protocol: TCP
+  resolution: STATIC
+  endpoints:
+  - address: 127.0.0.1
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: disable-mtls-for-sni-proxy
+spec:
+  host: sni-proxy.local
+  trafficPolicy:
+    tls:
+      mode: DISABLE

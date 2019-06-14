@@ -42,9 +42,8 @@ metadata:
   name: istio-citadel-service-account
   namespace: istio-system
 ---
-apiVersion: v1
-kind: Deployment
 apiVersion: extensions/v1beta1
+kind: Deployment
 metadata:
   name: istio-standalone-citadel
   namespace: istio-system
@@ -60,7 +59,7 @@ spec:
       serviceAccountName: istio-citadel-service-account
       containers:
       - name: citadel
-        image: docker.io/istio/citadel:1.0.8
+        image: docker.io/istio/citadel:1.1.8
         imagePullPolicy: IfNotPresent
         args:
           - --citadel-storage-namespace=istio-system

@@ -1,0 +1,38 @@
+gateways:
+  enabled: true
+  istio-ingressgateway:
+    enabled: false
+  istio-egressgateway:
+    enabled: false
+  istio-egressgateway-with-sni-proxy:
+    enabled: true
+    labels:
+      app: istio-egressgateway-with-sni-proxy
+      istio: egressgateway-with-sni-proxy
+    replicaCount: 1
+    autoscaleMin: 1
+    autoscaleMax: 5
+    cpu:
+      targetAverageUtilization: 80
+    serviceAnnotations: {}
+    type: ClusterIP
+    ports:
+    - port: 443
+      name: https
+    secretVolumes:
+    - name: egressgateway-certs
+      secretName: istio-egressgateway-certs
+      mountPath: /etc/istio/egressgateway-certs
+    - name: egressgateway-ca-certs
+      secretName: istio-egressgateway-ca-certs
+      mountPath: /etc/istio/egressgateway-ca-certs
+    configVolumes:
+    - name: sni-proxy-config
+      configMapName: egress-sni-proxy-configmap
+    additionalContainers:
+    - name: sni-proxy
+      image: nginx
+      volumeMounts:
+      - name: sni-proxy-config
+        mountPath: /etc/nginx
+        readOnly: true

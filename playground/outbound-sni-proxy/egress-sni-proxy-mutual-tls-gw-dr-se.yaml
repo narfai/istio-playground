@@ -1,0 +1,116 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: istio-egressgateway-with-sni-proxy
+spec:
+  selector:
+    istio: egressgateway-with-sni-proxy
+  servers:
+  - port:
+      number: 443
+      name: tls-egress
+      protocol: TLS
+    hosts:
+    - "*.wikipedia.org"
+    tls:
+      mode: MUTUAL
+      serverCertificate: /etc/certs/cert-chain.pem
+      privateKey: /etc/certs/key.pem
+      caCertificates: /etc/certs/root-cert.pem
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: egressgateway-for-wikipedia
+spec:
+  host: istio-egressgateway-with-sni-proxy.istio-system.svc.cluster.local
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+    portLevelSettings:
+    - port:
+        number: 443
+      tls:
+        mode: ISTIO_MUTUAL
+  subsets:
+  - name: wikipedia
+    trafficPolicy:
+      loadBalancer:
+        simple: ROUND_ROBIN
+      portLevelSettings:
+      - port:
+          number: 443
+        tls:
+          mode: ISTIO_MUTUAL
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: direct-wikipedia-through-egress-gateway
+spec:
+  hosts:
+  - "*.wikipedia.org"
+  gateways:
+  - mesh
+  - istio-egressgateway-with-sni-proxy
+  tls:
+  - match:
+    - gateways:
+      - mesh
+      port: 443
+      sni_hosts:
+      - "*.wikipedia.org"
+    route:
+    - destination:
+        host: istio-egressgateway-with-sni-proxy.istio-system.svc.cluster.local
+        subset: wikipedia
+        port:
+          number: 443
+      weight: 100
+  tcp:
+  - match:
+    - gateways:
+      - istio-egressgateway-with-sni-proxy
+      port: 443
+    route:
+    - destination:
+        host: sni-proxy.local
+        port:
+          number: 8443
+      weight: 100
+---
+# The following filter is used to forward the original SNI (sent by the application) as the SNI of the mutual TLS
+# connection.
+# The forwarded SNI will be reported to Mixer so that policies will be enforced based on the original SNI value.
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: forward-downstream-sni
+spec:
+  filters:
+  - listenerMatch:
+      portNumber: 443
+      listenerType: SIDECAR_OUTBOUND
+    filterName: forward_downstream_sni
+    filterType: NETWORK
+    filterConfig: {}
+---
+# The following filter verifies that the SNI of the mutual TLS connection (the SNI reported to Mixer) is
+# identical to the original SNI issued by the application (the SNI used for routing by the SNI proxy).
+# The filter prevents Mixer from being deceived by a malicious application: routing to one SNI while
+# reporting some other value of SNI. If the original SNI does not match the SNI of the mutual TLS connection, the
+# filter will block the connection to the external service.
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: egress-gateway-sni-verifier
+spec:
+  workloadLabels:
+    app: istio-egressgateway-with-sni-proxy
+  filters:
+  - listenerMatch:
+      portNumber: 443
+      listenerType: GATEWAY
+    filterName: sni_verifier
+    filterType: NETWORK
+    filterConfig: {}

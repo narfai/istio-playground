@@ -8,6 +8,12 @@ spec:
   severity: '"info"'
   timestamp: request.time | timestamp("2017-01-01T00:00:00Z")
   variables:
+    connectionEvent: connection.event | ""
+    sourceNamespace: source.namespace | "unknown"
+    sourceWorkload: source.workload.name | ""
+    sourcePrincipal: source.principal | "unknown"
+    requestedServerName: connection.requested_server_name | "unknown"
+    destinationApp: destination.labels["app"] | ""
     sourceIp: source.ip | ip("0.0.0.0")
     protocol: request.scheme | "http"
     destinationIp: destination.ip | ip("0.0.0.0")
